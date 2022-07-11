@@ -1,0 +1,151 @@
+﻿using UnityEngine;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Collections;
+using UnityEngine.UI;
+
+public class Modpacks : Mod
+{
+    AssetBundle asset;
+    public bool reloadList = false;
+    public IEnumerator Start()
+    {
+        AssetBundleCreateRequest request = AssetBundle.LoadFromMemoryAsync(GetEmbeddedFileBytes("modpackloader.assets"));
+        yield return request;
+        asset = request.assetBundle;
+
+        Debug.Log("Modpack starts loading...");
+
+        reloadList = false;
+        string[] rmodlist = ReadDataFile("rmoddata.txt");
+
+        foreach(string rmod in rmodlist)
+		{
+            if(!File.Exists(@"mods\" + rmod))
+			{
+                try
+                {
+                    Debug.Log("Mod " + rmod + " does not exist! Install it");
+                    File.WriteAllBytes(@"mods\" + rmod, GetEmbeddedFileBytes("Mods/" + rmod));
+                    reloadList = true;
+                    //Debug.Log(reloadList.ToString());
+                    //Debug.Log(reloadList);
+                    Debug.Log("Mod " +  rmod + " was succesfully installed!");
+                }
+				catch
+				{
+                    Debug.Log("Mod" + rmod + " failed to install!");
+				}
+                
+
+            }
+            else
+			{
+                //Debug.Log("Mod already exists just load it");
+			}
+		}
+        //Debug.Log(reloadList);
+        //Refresh Modslist
+        if (reloadList == true)
+        {
+            HMLLibrary.ModManagerPage.RefreshMods();
+
+            StartCoroutine(MessageBox("Installation finished! Unload the modpack and reload it!"));
+            yield break;
+
+
+
+        }
+
+
+
+        string[] modlist = ReadDataFile("data.txt");
+
+
+
+
+        for(int i = 0; i<modlist.Length; i++)
+		{
+            LoadMod(modlist[i]);
+		}
+
+        StartCoroutine(MessageBox("Mods from modpack have been succesfully loaded!"));
+    }
+
+    public void OnModUnload()
+    {
+        Debug.Log("The Modpack is unloading...");
+        string[] modlist = ReadDataFile("data.txt");
+
+        for (int i = 0; i < modlist.Length; i++)
+        {
+            UnLoadMod(modlist[i]);
+        }
+
+        asset.Unload(true);
+
+    }
+
+    public void LoadMod(string ModToLoad)
+    {
+        List<string> arguments = new List<string>();
+        arguments.Add(ModToLoad);
+        string[] argsArray = arguments.ToArray();
+        DefaultConsoleCommands.ModLoad(argsArray);
+                
+    }
+
+    public void UnLoadMod(string ModToLoad)
+    {
+        List<string> arguments = new List<string>();
+        arguments.Add(ModToLoad);
+        string[] argsArray = arguments.ToArray();
+        DefaultConsoleCommands.ModUnload(argsArray);
+
+    }
+
+
+
+    public string[] ReadDataFile(string File)
+    {
+        var bytes = GetEmbeddedFileBytes(File);
+        string output = Encoding.UTF8.GetString(bytes);
+
+        //Debug.Log("I will load these mods now: \n" + output);
+
+        List<string> mods = new List<string>();
+
+        using (StringReader reader = new StringReader(output))
+        {
+            string line = string.Empty;
+            do
+            {
+                line = reader.ReadLine();
+                if (line != null)
+                {
+                    mods.Add(line);
+                }
+
+            } while (line != null);
+        }
+
+        string[] modsarray = mods.ToArray();
+
+        return modsarray;
+
+
+   
+    }
+
+    public IEnumerator MessageBox(string Content)
+	{
+        //Debug.Log("msg");
+        GameObject canvas;
+        canvas = Instantiate(asset.LoadAsset<GameObject>("ModpackLoaderCanvas"), Vector3.zero, Quaternion.identity);
+        Text text = canvas.transform.Find("ModpackLoaderMessage").gameObject.transform.Find("ModpackLoaderMessageText").gameObject.GetComponent<Text>();
+        text.text = Content;
+        yield return new WaitForSeconds(3);
+        Destroy(canvas);
+	}
+}

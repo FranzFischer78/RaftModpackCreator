@@ -1,0 +1,14 @@
+{
+  "name": "RaftModpackCreator",
+  "author": "FranzFischer78",
+  "description": "Allows you to create Modpacks to share with your friends",
+  "version": "1.1",
+  "license": "GNU AGPLv3",
+  "icon": "icon.png",
+  "banner": "banner.jpg",
+  "gameVersion": "1.0",
+  "requiredByAllPlayers": false,
+  "updateUrl": "https://www.raftmodding.com/api/v1/mods/modpacks/version.txt",
+  "isModPermanent": false,
+  "excludedFiles": []
+}
