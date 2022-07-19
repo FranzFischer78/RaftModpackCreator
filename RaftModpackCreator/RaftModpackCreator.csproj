@@ -38,6 +38,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="Assets\modpackcreatormessagebox.assets" />
+    <None Include="Assets\modpacks_hookedui.assets" />
     <None Include="ModPackCreatorData\Modpacks.csfile" />
     <Compile Include="RaftModpackCreator.cs" />
   </ItemGroup>
@@ -49,7 +50,7 @@
     <None Include="Assets\modeditoritem.assets" />
     <None Include="modinfo.json" />
     <None Include="Assets\modlistitem.assets" />
-    <None Include="ModPackCreatorData\modinfo.json" />
+    <None Include="ModPackCreatorData\modinfo.jsonfile" />
     <None Include="ModPackCreatorData\packages.config" />
     <None Include="Assets\modpack.assets" />
     <None Include="Assets\modpackcreatoreditmodpack.assets" />

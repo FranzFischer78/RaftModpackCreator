@@ -3,10 +3,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Linq;
 
 public class RaftModpackCreator : Mod
 {
@@ -18,6 +18,7 @@ public class RaftModpackCreator : Mod
 	AssetBundle SetupModpackPanel;
 	AssetBundle EditModpackPanel;
 	AssetBundle MessageBoxBundle;
+	AssetBundle hookedui;
 
 	GameObject Canvas;
 	GameObject menu;
@@ -80,7 +81,7 @@ public class RaftModpackCreator : Mod
 		customAssemblies.Add(@"Assemblies/" + "System.IO.Compression.FileSystem.dll");
 		customAssemblies.Add(@"Assemblies/" + "System.IO.Compression.ZipFile.dll");
 		customAssemblies.Add(@"Assemblies/" + "System.IO.Compression.dll");
-	
+
 
 		foreach (var assemblyName in customAssemblies)
 		{
@@ -117,10 +118,11 @@ public class RaftModpackCreator : Mod
 	{
 		if (Loaded)
 		{
-			if (Input.GetKeyDown(KeyCode.F7)) {
+			if (Input.GetKeyDown(KeyCode.F7))
+			{
 				if (RAPI.IsCurrentSceneMainMenu() && IsMenuOpen == false)
 				{
-					if(GameObject.Find("ModpackCreator_Canvas") != null)
+					if (GameObject.Find("ModpackCreator_Canvas") != null)
 					{
 						LoadMainMenu(false);
 					}
@@ -131,7 +133,12 @@ public class RaftModpackCreator : Mod
 				}
 			}
 		}
+
+
 	}
+
+
+
 
 
 	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
@@ -156,12 +163,299 @@ public class RaftModpackCreator : Mod
 		AssetBundleCreateRequest request6 = AssetBundle.LoadFromMemoryAsync(GetEmbeddedFileBytes("Assets/modpackcreatormessagebox.assets"));
 		yield return request6;
 		MessageBoxBundle = request6.assetBundle;
+		AssetBundleCreateRequest request7 = AssetBundle.LoadFromMemoryAsync(GetEmbeddedFileBytes("Assets/modpacks_hookedui.assets"));
+		yield return request7;
+		hookedui = request7.assetBundle;
 		Loaded = true;
 		notification.Close();
 		notification = FindObjectOfType<HNotify>().AddNotification(HNotify.NotificationType.normal, "Loading finished! Press f7 to use the modpack creator ;)", 5, HNotify.CheckSprite);
-		
+
 		Debug.Log("Loading finished! Press f7 to use the modpack creator ;)");
+
+		HookUI();
+
 	}
+
+
+	#region UIHOOK
+
+	public List<string> EnabledMods = new List<string>();
+	public void HookUI()
+	{
+		GameObject MainMenuParent = GameObject.Find("MainMenuCanvas");
+
+		GameObject MenuButtonsParent = MainMenuParent.transform.Find("MenuButtons").gameObject;
+
+		GameObject NewGamePanelParent = MainMenuParent.transform.Find("New Game Box").gameObject;
+		GameObject LoadGamePanelParent = MainMenuParent.transform.Find("Load Game Box").gameObject;
+
+		GameObject CreateGameButton = MainMenuParent.transform.Find("New Game Box").transform.Find("CreateGameButton").gameObject;
+
+		Debug.Log("Hooking UI");
+
+		//Instantiating the selection panel
+
+
+
+
+
+		Debug.Log("Found parent");
+
+		try
+		{
+			GameObject toInstantiate = hookedui.LoadAsset<GameObject>("ModpackWorldSelect");
+			Debug.Log("Got GameObject");
+			GameObject lol = Instantiate(toInstantiate, NewGamePanelParent.transform);
+			lol.GetComponent<Button>().onClick.AddListener(() => InitWorldModSelector(true));
+		}
+		catch (NullReferenceException e)
+		{
+			Debug.Log("Couldn't instantiate on Ui " + e);
+		}
+
+		try
+		{
+			GameObject toInstantiate = hookedui.LoadAsset<GameObject>("ModpackWorldSelect");
+			Debug.Log("Got GameObject");
+			GameObject lol = Instantiate(toInstantiate, LoadGamePanelParent.transform);
+			lol.GetComponent<Button>().onClick.AddListener(() => InitWorldModSelector(false));
+		}
+		catch (NullReferenceException e)
+		{
+			Debug.Log("Couldn't instantiate on Ui " + e);
+		}
+
+
+		//Patching buttons
+		Debug.Log("Button patch");
+
+		GameObject NewWorldButton = MenuButtonsParent.transform.Find("New Game").gameObject;
+		Debug.Log("Button patch1");
+
+		GameObject LoadWorldButton = MenuButtonsParent.transform.Find("Load game").gameObject;
+		Debug.Log("Button patch2");
+
+		NewWorldButton.GetComponent<Button>().onClick.AddListener(() => { Debug.Log("Opened new world Menu"); EnabledMods.Clear(); });
+		LoadWorldButton.GetComponent<Button>().onClick.AddListener(() => { Debug.Log("Opened load world Menu"); EnabledMods.Clear(); });
+
+
+
+	}
+
+	public void InitWorldModSelector(bool NewWorld)
+	{
+		GameObject MainMenuParent = GameObject.Find("MainMenuCanvas");
+
+		List<string> excludes = new List<string>();
+		excludes.Add("Modpacks");
+		excludes.Add("ModUpdater");
+		excludes.Add("ModUtils");
+		excludes.Add("Extra Settings API");
+
+
+
+		Debug.Log("Init world selector");
+		GameObject ModSelector;
+		if (NewWorld)
+		{
+			ModSelector = Instantiate(hookedui.LoadAsset<GameObject>("Modpack_ModSelectorWorld"), GameObject.Find("MainMenuCanvas").transform.Find("New Game Box").gameObject.transform);
+
+		}
+		else
+		{
+			ModSelector = Instantiate(hookedui.LoadAsset<GameObject>("Modpack_ModSelectorWorld"), GameObject.Find("MainMenuCanvas").transform.Find("Load Game Box").gameObject.transform);
+
+		}
+		List<string> allMods = new List<string>();
+
+		if (!NewWorld)
+		{
+			
+			//Get data from old world
+			LoadGame_Selection[] gameFiles = FindObjectsOfType<LoadGame_Selection>();
+			string worldname = "";
+
+			foreach(LoadGame_Selection game_Selection in gameFiles)
+			{
+				GameObject elem = game_Selection.gameObject;
+				string name = elem.transform.Find("GameName").gameObject.GetComponent<Text>().text;
+				if (elem.transform.Find("SelectionBG").gameObject.activeSelf)
+				{
+					worldname = name;
+					break;
+				}
+			}
+
+			if (File.Exists(SaveAndLoad.WorldPath + worldname + @"\modprofile.txt"))
+			{
+				string[] modprofile = System.IO.File.ReadAllLines(SaveAndLoad.WorldPath + worldname + @"\modprofile.txt");
+
+				EnabledMods.Clear();
+				for (int i = 0; i < modprofile.Length; i++)
+				{
+
+					EnabledMods.Add(modprofile[i]);
+				}
+
+				foreach (string mod in allMods)
+				{
+					if (excludes.Contains(mod))
+					{
+						continue;
+					}
+
+
+					if (EnabledMods.Contains(mod))
+					{
+						DefaultConsoleCommands.ModLoad(new string[] { mod });
+					}
+					else
+					{
+						DefaultConsoleCommands.ModUnload(new string[] { mod });
+					}
+				}
+			}
+
+		}
+
+
+
+		HMLLibrary.ModManagerPage.modList.ForEach(item =>
+		{
+
+			string name = item.jsonmodinfo.name;
+
+			if (!excludes.Contains(name))
+			{
+				allMods.Add(name);
+
+			}
+
+
+
+
+
+		}
+		);
+
+
+
+		foreach (string mod in allMods)
+		{
+			GameObject elem = Instantiate(hookedui.LoadAsset<GameObject>("Modpack_ModSelectorItem"), ModSelector.transform.Find("ModsSelector").transform.Find("Viewport").Find("Content").transform);
+			elem.transform.Find("ToggleMod").Find("LabelMod").gameObject.GetComponent<Text>().text = mod;
+			
+			if (EnabledMods.Count != 0)
+			{
+				if (EnabledMods.Contains(mod))
+				{
+					elem.transform.Find("ToggleMod").gameObject.GetComponent<Toggle>().isOn = true;
+				}
+			}
+
+
+			elem.transform.Find("ToggleMod").gameObject.GetComponent<Toggle>().onValueChanged.AddListener((bool state) =>
+			{
+				if (state)
+					EnabledMods.Add(mod);
+				else
+					EnabledMods.Remove(mod);
+			});
+		}
+
+		ModSelector.transform.Find("ApplyMods").gameObject.GetComponent<Button>().onClick.AddListener(() =>
+		{
+			//Force reload
+			//Force unload assetBundles
+
+
+
+			foreach (string mod in allMods)
+			{
+				if (excludes.Contains(mod))
+				{
+					continue;
+				}
+
+
+				if (EnabledMods.Contains(mod))
+				{
+					DefaultConsoleCommands.ModLoad(new string[] { mod });
+				}
+				else
+				{
+					DefaultConsoleCommands.ModUnload(new string[] { mod });
+				}
+			}
+			Destroy(ModSelector);
+
+		});
+
+
+		GameObject CreateGameButton = MainMenuParent.transform.Find("New Game Box").transform.Find("CreateGameButton").gameObject;
+		CreateGameButton.GetComponent<Button>().onClick.AddListener(() =>
+		{
+			Debug.Log("Launch create game");
+			//Debug.Log(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
+			string Modlist = "";
+
+			foreach(string mod in EnabledMods)
+			{
+				Modlist += mod + "\n";
+			}
+
+			Directory.CreateDirectory(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
+			System.IO.File.WriteAllText(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName + @"\modprofile.txt", Modlist);
+
+
+
+			});
+
+
+
+	
+
+	GameObject LoadGameButton = MainMenuParent.transform.Find("Load Game Box").transform.Find("LoadGameButton").gameObject;
+	LoadGameButton.GetComponent<Button>().onClick.AddListener(() =>
+		{
+			Debug.Log("Launch load game");
+			Debug.Log(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
+			string Modlist = "";
+
+			foreach(string mod in EnabledMods)
+			{
+				Modlist += mod + "\n";
+			}
+			LoadGame_Selection[] gameFiles = FindObjectsOfType<LoadGame_Selection>();
+
+			string worldname = "";
+
+			foreach (LoadGame_Selection game_Selection in gameFiles)
+			{
+				GameObject elem = game_Selection.gameObject;
+				string name = elem.transform.Find("GameName").gameObject.GetComponent<Text>().text;
+				if (elem.transform.Find("SelectionBG").gameObject.activeSelf)
+				{
+					worldname = name;
+					break;
+				}
+			}
+
+			//Directory.CreateDirectory(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
+			System.IO.File.WriteAllText(SaveAndLoad.WorldPath + worldname + @"\modprofile.txt", Modlist);
+
+
+
+			});
+
+
+
+	}
+
+
+
+
+	#endregion
 
 	#region Main Menu
 	public void LoadMainMenu(bool init)
@@ -270,7 +564,7 @@ public class RaftModpackCreator : Mod
 		Datafiles.Add(@"ModPackCreatorData/" + "banner.jpg");
 		Datafiles.Add(@"ModPackCreatorData/" + "data.txt");
 		Datafiles.Add(@"ModPackCreatorData/" + "icon.png");
-		Datafiles.Add(@"ModPackCreatorData/" + "modinfo.json");
+		Datafiles.Add(@"ModPackCreatorData/" + "modinfo.jsonfile");
 		Datafiles.Add(@"ModPackCreatorData/" + "Modpacks.csfile");
 		Datafiles.Add(@"ModPackCreatorData/" + "packages.config");
 		Datafiles.Add(@"ModPackCreatorData/" + "modpackloader.assets");
@@ -298,7 +592,7 @@ public class RaftModpackCreator : Mod
 		NewModpackPanel.transform.Find("SetupModpack_CreateModpack").GetComponent<Button>().onClick.AddListener(CreateNewModpack);
 		NewModpackPanel.transform.Find("SetupModpack_ClosePanel").GetComponent<Button>().onClick.AddListener(CloseModpackPanel);
 
-		
+
 
 
 	}
@@ -417,7 +711,7 @@ public class RaftModpackCreator : Mod
 		}
 		else
 		{
-			CreateMessageBox("Failed to create Modpack","You must specify a name for the Modpack!");
+			CreateMessageBox("Failed to create Modpack", "You must specify a name for the Modpack!");
 		}
 	}
 
@@ -472,7 +766,7 @@ public class RaftModpackCreator : Mod
 				System.IO.Compression.ZipFile.CreateFromDirectory(temppath, CurrentModpackPath);
 
 				Directory.Delete(temppath, true);
-				CreateMessageBox("Saved","Succesfully edited modpack");
+				CreateMessageBox("Saved", "Succesfully edited modpack");
 
 			}
 			else
@@ -498,6 +792,10 @@ public class RaftModpackCreator : Mod
 					if (datafile == (@"ModPackCreatorData/" + "Modpacks.csfile"))
 					{
 						File.WriteAllBytes(temppath + Path.GetFileNameWithoutExtension(datafile) + ".cs", bytes);
+					}
+					else if (datafile == (@"ModPackCreatorData/" + "modinfo.jsonfile"))
+					{
+						File.WriteAllBytes(temppath + Path.GetFileNameWithoutExtension(datafile) + ".json", bytes);
 					}
 					else
 					{
@@ -529,7 +827,7 @@ public class RaftModpackCreator : Mod
 		}
 		else
 		{
-			CreateMessageBox("Error","Create a modpack first");
+			CreateMessageBox("Error", "Create a modpack first");
 			return;
 		}
 	}
@@ -567,7 +865,7 @@ public class RaftModpackCreator : Mod
 		catch (Exception e)
 		{
 			Debug.LogWarning("Zip Error: " + e);
-			CreateMessageBox("Unexpected!","The specified file is not a modpack");
+			CreateMessageBox("Unexpected!", "The specified file is not a modpack");
 			return;
 		}
 
@@ -614,7 +912,7 @@ public class RaftModpackCreator : Mod
 		GameObject ModlistContainer = menu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
 
 
-		
+
 
 
 		foreach (Transform child in ModlistContainer.transform)
@@ -724,10 +1022,10 @@ public class RaftModpackCreator : Mod
 
 		//Wrtie rmod data file
 		string Items = "";
-		
 
 
-		foreach(var rmodFile in rmodFilesUsedArrr)
+
+		foreach (var rmodFile in rmodFilesUsedArrr)
 		{
 			Items += Path.GetFileName(rmodFile) + "\n";
 		}
@@ -738,7 +1036,7 @@ public class RaftModpackCreator : Mod
 
 	}
 
-	
+
 
 
 	#region Add/Remove to/from Modpack
@@ -752,7 +1050,7 @@ public class RaftModpackCreator : Mod
 			string textelem = child.transform.Find("ModpackCreator_Modeditor_ModitemElem").gameObject.transform.Find("Text").gameObject.GetComponent<Text>().text;
 			if (textelem == Modname)
 			{
-				CreateMessageBox("Don't spam :)","Can't have a mod twice in a modpack");
+				CreateMessageBox("Don't spam :)", "Can't have a mod twice in a modpack");
 				return;
 
 			}
