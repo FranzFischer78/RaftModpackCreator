@@ -180,6 +180,7 @@ public class RaftModpackCreator : Mod
 	#region UIHOOK
 
 	public List<string> EnabledMods = new List<string>();
+	public bool LauchedPanelOneTime = false;
 	public void HookUI()
 	{
 		GameObject MainMenuParent = GameObject.Find("MainMenuCanvas");
@@ -236,9 +237,117 @@ public class RaftModpackCreator : Mod
 		//Debug.Log("Button patch2");
 
 		NewWorldButton.GetComponent<Button>().onClick.AddListener(() => { Debug.Log("Opened new world Menu"); EnabledMods.Clear(); });
-		LoadWorldButton.GetComponent<Button>().onClick.AddListener(() => { Debug.Log("Opened load world Menu"); EnabledMods.Clear(); });
+		LoadWorldButton.GetComponent<Button>().onClick.AddListener(() =>
+		{
+			LauchedPanelOneTime = false;
+
+			Debug.Log("Opened load world Menu");
+			EnabledMods.Clear();
+
+			ReloadMods();
+
+		});
 
 
+
+
+
+	}
+
+	public void ReloadMods()
+	{
+		LoadGame_Selection[] gameFiles = FindObjectsOfType<LoadGame_Selection>();
+
+		List<string> excludes = new List<string>();
+		excludes.Add("Modpacks");
+		excludes.Add("ModUpdater");
+		excludes.Add("ModUtils");
+		excludes.Add("Extra Settings API");
+		List<string> allMods = new List<string>();
+
+
+		HMLLibrary.ModManagerPage.modList.ForEach(item =>
+		{
+
+			string name = item.jsonmodinfo.name;
+
+			if (!excludes.Contains(name))
+			{
+				allMods.Add(name);
+
+			}
+
+
+
+
+
+		}
+		);
+
+
+
+		foreach (LoadGame_Selection game_Selection in gameFiles)
+		{
+			GameObject elem = game_Selection.gameObject;
+
+			//Listener start
+			elem.GetComponent<Button>().onClick.AddListener(() =>
+			{
+
+
+
+				LoadGame_Selection[] gameFiless = FindObjectsOfType<LoadGame_Selection>();
+				string worldnamee = "";
+
+				foreach (LoadGame_Selection game_Selectionn in gameFiless)
+				{
+					GameObject elemm = game_Selectionn.gameObject;
+					string namee = elemm.transform.Find("GameName").gameObject.GetComponent<Text>().text;
+
+
+					if (elemm.transform.Find("SelectionBG").gameObject.activeSelf)
+					{
+						worldnamee = namee;
+						break;
+					}
+				}
+
+				if (File.Exists(SaveAndLoad.WorldPath + worldnamee + @"\modprofile.txt"))
+				{
+					string[] modprofile = System.IO.File.ReadAllLines(SaveAndLoad.WorldPath + worldnamee + @"\modprofile.txt");
+
+					EnabledMods.Clear();
+					for (int i = 0; i < modprofile.Length; i++)
+					{
+
+						EnabledMods.Add(modprofile[i]);
+					}
+
+					foreach (string mod in allMods)
+					{
+						if (excludes.Contains(mod))
+						{
+							continue;
+						}
+
+
+						if (EnabledMods.Contains(mod))
+						{
+							DefaultConsoleCommands.ModLoad(new string[] { mod });
+						}
+						else
+						{
+							DefaultConsoleCommands.ModUnload(new string[] { mod });
+						}
+					}
+				}
+
+
+			});
+			//listener end
+
+
+		}
 
 	}
 
@@ -270,12 +379,12 @@ public class RaftModpackCreator : Mod
 
 		if (!NewWorld)
 		{
-			
+
 			//Get data from old world
 			LoadGame_Selection[] gameFiles = FindObjectsOfType<LoadGame_Selection>();
 			string worldname = "";
 
-			foreach(LoadGame_Selection game_Selection in gameFiles)
+			foreach (LoadGame_Selection game_Selection in gameFiles)
 			{
 				GameObject elem = game_Selection.gameObject;
 				string name = elem.transform.Find("GameName").gameObject.GetComponent<Text>().text;
@@ -351,7 +460,7 @@ public class RaftModpackCreator : Mod
 		{
 			GameObject elem = Instantiate(hookedui.LoadAsset<GameObject>("Modpack_ModSelectorItem"), ModSelector.transform.Find("ModsSelector").transform.Find("Viewport").Find("Content").transform);
 			elem.transform.Find("ToggleMod").Find("LabelMod").gameObject.GetComponent<Text>().text = mod;
-			
+
 			if (EnabledMods.Count != 0)
 			{
 				if (EnabledMods.Contains(mod))
@@ -406,7 +515,7 @@ public class RaftModpackCreator : Mod
 			//Debug.Log(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
 			string Modlist = "";
 
-			foreach(string mod in EnabledMods)
+			foreach (string mod in EnabledMods)
 			{
 				Modlist += mod + "\n";
 			}
@@ -416,40 +525,40 @@ public class RaftModpackCreator : Mod
 
 
 
-			});
+		});
 
 
 
-	
 
-	GameObject LoadGameButton = MainMenuParent.transform.Find("Load Game Box").transform.Find("LoadGameButton").gameObject;
-	LoadGameButton.GetComponent<Button>().onClick.AddListener(() =>
-		{
-			Debug.Log("[MODPACKS] Launch load game");
+
+		GameObject LoadGameButton = MainMenuParent.transform.Find("Load Game Box").transform.Find("LoadGameButton").gameObject;
+		LoadGameButton.GetComponent<Button>().onClick.AddListener(() =>
+			{
+				Debug.Log("[MODPACKS] Launch load game");
 			//Debug.Log(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
-			string Modlist = "";
+				string Modlist = "";
 
-			foreach(string mod in EnabledMods)
-			{
-				Modlist += mod + "\n";
-			}
-			LoadGame_Selection[] gameFiles = FindObjectsOfType<LoadGame_Selection>();
-
-			string worldname = "";
-
-			foreach (LoadGame_Selection game_Selection in gameFiles)
-			{
-				GameObject elem = game_Selection.gameObject;
-				string name = elem.transform.Find("GameName").gameObject.GetComponent<Text>().text;
-				if (elem.transform.Find("SelectionBG").gameObject.activeSelf)
+				foreach (string mod in EnabledMods)
 				{
-					worldname = name;
-					break;
+					Modlist += mod + "\n";
 				}
-			}
+				LoadGame_Selection[] gameFiles = FindObjectsOfType<LoadGame_Selection>();
+
+				string worldname = "";
+
+				foreach (LoadGame_Selection game_Selection in gameFiles)
+				{
+					GameObject elem = game_Selection.gameObject;
+					string name = elem.transform.Find("GameName").gameObject.GetComponent<Text>().text;
+					if (elem.transform.Find("SelectionBG").gameObject.activeSelf)
+					{
+						worldname = name;
+						break;
+					}
+				}
 
 			//Directory.CreateDirectory(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
-			System.IO.File.WriteAllText(SaveAndLoad.WorldPath + worldname + @"\modprofile.txt", Modlist);
+				System.IO.File.WriteAllText(SaveAndLoad.WorldPath + worldname + @"\modprofile.txt", Modlist);
 
 
 
