@@ -199,12 +199,12 @@ public class RaftModpackCreator : Mod
 
 
 
-		Debug.Log("Found parent");
+		//Debug.Log("Found parent");
 
 		try
 		{
 			GameObject toInstantiate = hookedui.LoadAsset<GameObject>("ModpackWorldSelect");
-			Debug.Log("Got GameObject");
+			//Debug.Log("Got GameObject");
 			GameObject lol = Instantiate(toInstantiate, NewGamePanelParent.transform);
 			lol.GetComponent<Button>().onClick.AddListener(() => InitWorldModSelector(true));
 		}
@@ -216,7 +216,7 @@ public class RaftModpackCreator : Mod
 		try
 		{
 			GameObject toInstantiate = hookedui.LoadAsset<GameObject>("ModpackWorldSelect");
-			Debug.Log("Got GameObject");
+			//Debug.Log("Got GameObject");
 			GameObject lol = Instantiate(toInstantiate, LoadGamePanelParent.transform);
 			lol.GetComponent<Button>().onClick.AddListener(() => InitWorldModSelector(false));
 		}
@@ -227,13 +227,13 @@ public class RaftModpackCreator : Mod
 
 
 		//Patching buttons
-		Debug.Log("Button patch");
+		//Debug.Log("Button patch");
 
 		GameObject NewWorldButton = MenuButtonsParent.transform.Find("New Game").gameObject;
-		Debug.Log("Button patch1");
+		//Debug.Log("Button patch1");
 
 		GameObject LoadWorldButton = MenuButtonsParent.transform.Find("Load game").gameObject;
-		Debug.Log("Button patch2");
+		//Debug.Log("Button patch2");
 
 		NewWorldButton.GetComponent<Button>().onClick.AddListener(() => { Debug.Log("Opened new world Menu"); EnabledMods.Clear(); });
 		LoadWorldButton.GetComponent<Button>().onClick.AddListener(() => { Debug.Log("Opened load world Menu"); EnabledMods.Clear(); });
@@ -254,7 +254,7 @@ public class RaftModpackCreator : Mod
 
 
 
-		Debug.Log("Init world selector");
+		//Debug.Log("Init world selector");
 		GameObject ModSelector;
 		if (NewWorld)
 		{
@@ -402,7 +402,7 @@ public class RaftModpackCreator : Mod
 		GameObject CreateGameButton = MainMenuParent.transform.Find("New Game Box").transform.Find("CreateGameButton").gameObject;
 		CreateGameButton.GetComponent<Button>().onClick.AddListener(() =>
 		{
-			Debug.Log("Launch create game");
+			Debug.Log("[MODPACKS] Launch create game");
 			//Debug.Log(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
 			string Modlist = "";
 
@@ -425,8 +425,8 @@ public class RaftModpackCreator : Mod
 	GameObject LoadGameButton = MainMenuParent.transform.Find("Load Game Box").transform.Find("LoadGameButton").gameObject;
 	LoadGameButton.GetComponent<Button>().onClick.AddListener(() =>
 		{
-			Debug.Log("Launch load game");
-			Debug.Log(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
+			Debug.Log("[MODPACKS] Launch load game");
+			//Debug.Log(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
 			string Modlist = "";
 
 			foreach(string mod in EnabledMods)
@@ -858,9 +858,14 @@ public class RaftModpackCreator : Mod
 
 		}
 
-		string rmod = Path.GetFullPath(@"mods\" + Modpack + ".rmod");
+		string tmpmodpack = Modpack.Replace(' ', '-');
+
+
+		string rmod = Path.GetFullPath(@"mods\" + tmpmodpack + ".rmod");
 
 		string datacontent = "";
+
+		//Debug.Log(rmod);
 
 		try
 		{
