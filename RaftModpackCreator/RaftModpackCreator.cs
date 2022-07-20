@@ -286,6 +286,13 @@ public class RaftModpackCreator : Mod
 				}
 			}
 
+			if (worldname.IsNullOrEmpty())
+			{
+				Destroy(ModSelector);
+				FindObjectOfType<HNotify>().AddNotification(HNotify.NotificationType.normal, "Select a world first!", 3, HNotify.ErrorSprite);
+				return;
+			}
+
 			if (File.Exists(SaveAndLoad.WorldPath + worldname + @"\modprofile.txt"))
 			{
 				string[] modprofile = System.IO.File.ReadAllLines(SaveAndLoad.WorldPath + worldname + @"\modprofile.txt");
@@ -447,6 +454,14 @@ public class RaftModpackCreator : Mod
 
 
 			});
+
+		GameObject CancelButton = ModSelector.transform.Find("CancelButton").gameObject;
+
+		CancelButton.GetComponent<Button>().onClick.AddListener(() =>
+		{
+			Destroy(ModSelector);
+		}
+		);
 
 
 
