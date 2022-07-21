@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
+using HarmonyLib;
 
 public class RaftModpackCreator : Mod
 {
@@ -67,11 +68,16 @@ public class RaftModpackCreator : Mod
 
 	HNotification notification;
 
+	public static RaftModpackCreator instanceModpack;
+
 
 	public void Start()
 	{
 		Loaded = false;
 		IsMenuOpen = false;
+		instanceModpack = this;
+		var harmony = new Harmony("com.franzfischer.modpacks");
+		harmony.PatchAll();
 
 		notification = FindObjectOfType<HNotify>().AddNotification(HNotify.NotificationType.spinning, "Loading Raft Modpack Creator...");
 
@@ -132,6 +138,8 @@ public class RaftModpackCreator : Mod
 					}
 				}
 			}
+
+			//if(Raft_Network.GameSceneName == )
 		}
 
 
@@ -175,6 +183,16 @@ public class RaftModpackCreator : Mod
 		HookUI();
 
 	}
+
+	//Reload UI HOOK AFTER LEAVING A world from a game
+	/*public void WorldEvent_WorldUnloaded()
+	{
+		HookUI();
+	}*/
+
+
+
+
 
 
 	#region UIHOOK
@@ -1251,3 +1269,38 @@ public class RaftModpackCreator : Mod
 		Debug.Log("Mod RaftModpackCreator has been unloaded!");
 	}
 }
+
+
+#region Harmony
+
+
+//Reload UI HOOK PATCHES
+#region HarmonyUIHOOK
+
+[HarmonyPatch]
+static class Patch_Coroutine
+{
+	static MethodBase TargetMethod() => typeof(Raft).Assembly.GetTypes().First(x => x.FullName.StartsWith("LoadSceneManager+<Load>")).GetMethod("MoveNext", ~BindingFlags.Default);
+	static void Postfix(ref bool __result, ref string ___sceneName)
+	{
+		if (!__result)
+		{
+			Debug.Log("Load main menu postfix " + ___sceneName);
+			if(___sceneName == "MainMenuScene")
+			{
+				Debug.Log("Here we go again: HOOKING UI");
+				RaftModpackCreator.instanceModpack.HookUI();
+			}
+		}
+	}
+}
+#endregion
+
+
+
+
+
+
+
+
+#endregion
