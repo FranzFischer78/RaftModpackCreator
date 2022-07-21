@@ -1285,10 +1285,10 @@ static class Patch_Coroutine
 	{
 		if (!__result)
 		{
-			Debug.Log("Load main menu postfix " + ___sceneName);
+			Debug.Log("[MODPACKS] Load main menu postfix " + ___sceneName);
 			if(___sceneName == "MainMenuScene")
 			{
-				Debug.Log("Here we go again: HOOKING UI");
+				Debug.Log("[MODPACKS] Here we go again: HOOKING UI");
 				RaftModpackCreator.instanceModpack.HookUI();
 			}
 		}
