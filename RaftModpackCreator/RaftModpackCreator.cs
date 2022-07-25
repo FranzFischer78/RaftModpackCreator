@@ -180,7 +180,7 @@ public class RaftModpackCreator : Mod
 
 		Debug.Log("Loading finished! Press f7 to use the modpack creator ;)");
 
-		HookUI();
+		//HookUI();
 
 	}
 
@@ -355,6 +355,7 @@ public class RaftModpackCreator : Mod
 						}
 						else
 						{
+							ForceUnloadMod(mod);
 							DefaultConsoleCommands.ModUnload(new string[] { mod });
 						}
 					}
@@ -445,6 +446,8 @@ public class RaftModpackCreator : Mod
 					}
 					else
 					{
+						ForceUnloadMod(mod);
+
 						DefaultConsoleCommands.ModUnload(new string[] { mod });
 					}
 				}
@@ -518,6 +521,7 @@ public class RaftModpackCreator : Mod
 				}
 				else
 				{
+					ForceUnloadMod(mod);
 					DefaultConsoleCommands.ModUnload(new string[] { mod });
 				}
 			}
@@ -595,6 +599,66 @@ public class RaftModpackCreator : Mod
 	}
 
 
+
+
+	#endregion
+
+
+	#region ForceLoad_Unload
+
+	public void ForceUnloadMod(string mod)
+	{
+		Debug.Log("Check for force unload");
+
+		List<ModData> modlist = HMLLibrary.ModManagerPage.modList;
+
+		Dictionary<string, byte[]> modfiledict = new Dictionary<string, byte[]>();
+
+		foreach(ModData md in modlist)
+		{
+			if(md.jsonmodinfo.name == mod)
+			{
+				modfiledict = md.modinfo.modFiles;
+			}
+		}
+		if(modfiledict.Count == 0)
+		{
+			Debug.Log("[MODPACKS] An unexpected error happened while trying to force unload");
+			return;
+		}
+		else
+		{
+			foreach(KeyValuePair<string, byte[]> keyValuePair in modfiledict)
+			{
+				if (keyValuePair.Key.Contains(".asset"))
+				{
+					Debug.Log("Unloading " + keyValuePair.Key);
+					EnsureBundleUnload(keyValuePair.Key);
+				}
+			}
+		}
+	}
+
+	public static void EnsureBundleUnload(string name)
+	{
+		AssetBundle.GetAllLoadedAssetBundles().ToList().ForEach(assetbundle =>
+		{
+
+			if (!assetbundle.name.Contains(".assets"))
+			{
+				name = name.Split('.')[0];
+			}
+			Debug.Log(assetbundle.name);
+			Debug.Log(name);
+
+
+			if (assetbundle.name == name)
+			{
+				assetbundle.Unload(true);
+				Debug.Log("Unloaded " + name);
+			}
+		});
+	}
 
 
 	#endregion
@@ -1278,7 +1342,7 @@ public class RaftModpackCreator : Mod
 #region HarmonyUIHOOK
 
 [HarmonyPatch]
-static class Patch_Coroutine
+static class Patch_Coroutine_UIHOOK_SceneLoad
 {
 	static MethodBase TargetMethod() => typeof(Raft).Assembly.GetTypes().First(x => x.FullName.StartsWith("LoadSceneManager+<Load>")).GetMethod("MoveNext", ~BindingFlags.Default);
 	static void Postfix(ref bool __result, ref string ___sceneName)
@@ -1289,7 +1353,7 @@ static class Patch_Coroutine
 			if(___sceneName == "MainMenuScene")
 			{
 				Debug.Log("[MODPACKS] Here we go again: HOOKING UI");
-				RaftModpackCreator.instanceModpack.HookUI();
+				//RaftModpackCreator.instanceModpack.HookUI();
 			}
 		}
 	}
