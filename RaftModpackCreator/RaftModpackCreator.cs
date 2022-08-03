@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using HarmonyLib;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,12 +8,14 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
-using HarmonyLib;
+using UnityEngine.EventSystems;
+using UnityEngine.Events;
+
 
 public class RaftModpackCreator : Mod
 {
 
-
+	//TO DO: PUT ALL THE ASSETS IN ONE FILE!!!
 	AssetBundle asset;
 	AssetBundle assetModlistModitem;
 	AssetBundle assetModeditorModitem;
@@ -48,10 +51,8 @@ public class RaftModpackCreator : Mod
 
 
 
-
+	//Assembly variables
 	List<string> customAssemblies = new List<string>();
-
-	//public IDictionary<string, Assembly> additional = new Dictionary<string, Assembly>();
 	public List<Assembly> additional = new List<Assembly>();
 
 
@@ -70,7 +71,7 @@ public class RaftModpackCreator : Mod
 
 	public static RaftModpackCreator instanceModpack;
 
-
+	//Initialisation process: Patching + Assembly Loading
 	public void Start()
 	{
 		Loaded = false;
@@ -122,7 +123,7 @@ public class RaftModpackCreator : Mod
 
 	public void Update()
 	{
-		if (Loaded)
+		/*if (Loaded)
 		{
 			if (Input.GetKeyDown(KeyCode.F7))
 			{
@@ -139,16 +140,33 @@ public class RaftModpackCreator : Mod
 				}
 			}
 
-			//if(Raft_Network.GameSceneName == )
-		}
+		}*/
 
 
 	}
 
+	public void OpenModpackCreatorWindow()
+	{
+		if (Loaded)
+		{
+
+			if (RAPI.IsCurrentSceneMainMenu() && IsMenuOpen == false)
+			{
+				if (GameObject.Find("ModpackCreator_Canvas") != null)
+				{
+					LoadMainMenu(false);
+				}
+				if (GameObject.Find("ModpackCreator_Canvas") == null)
+				{
+					LoadMainMenu(true);
+				}
+			}
+
+		}
+	}
 
 
-
-
+	//Initialising stuff for assets and ui
 	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
 	public IEnumerator InitFunc()
 	{
@@ -180,7 +198,7 @@ public class RaftModpackCreator : Mod
 
 		Debug.Log("Loading finished! Press f7 to use the modpack creator ;)");
 
-		//HookUI();
+		HookUI();
 
 	}
 
@@ -211,6 +229,32 @@ public class RaftModpackCreator : Mod
 		GameObject CreateGameButton = MainMenuParent.transform.Find("New Game Box").transform.Find("CreateGameButton").gameObject;
 
 		Debug.Log("Hooking UI");
+
+		//Hooking onto the main menu to add new buttons
+		GameObject ModpacksButton = Instantiate(MenuButtonsParent.transform.Find("New Game").gameObject, MenuButtonsParent.transform);
+		ModpacksButton.transform.SetAsFirstSibling();
+		Debug.Log("namebutton: " + ModpacksButton.name);
+		ModpacksButton.GetComponentInChildren<Text>().text = "MODPACKS";
+		ModpacksButton.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
+
+		ModpacksButton.GetComponent<Button>().onClick.RemoveAllListeners();
+
+		ModpacksButton.GetComponent<Button>().onClick.AddListener(() =>
+		{
+			OpenModpackCreatorWindow();
+		});
+
+
+
+
+		Debug.Log("Running debug check");
+		foreach (Transform transformn in MenuButtonsParent.GetComponentsInChildren<Transform>())
+		{
+
+			Debug.Log("name: " + transformn.gameObject.name);
+
+		}
+
 
 		//Instantiating the selection panel
 
@@ -557,7 +601,7 @@ public class RaftModpackCreator : Mod
 		LoadGameButton.GetComponent<Button>().onClick.AddListener(() =>
 			{
 				Debug.Log("[MODPACKS] Launch load game");
-			//Debug.Log(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
+				//Debug.Log(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
 				string Modlist = "";
 
 				foreach (string mod in EnabledMods)
@@ -579,7 +623,7 @@ public class RaftModpackCreator : Mod
 					}
 				}
 
-			//Directory.CreateDirectory(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
+				//Directory.CreateDirectory(SaveAndLoad.WorldPath + SaveAndLoad.CurrentGameFileName);
 				System.IO.File.WriteAllText(SaveAndLoad.WorldPath + worldname + @"\modprofile.txt", Modlist);
 
 
@@ -614,21 +658,21 @@ public class RaftModpackCreator : Mod
 
 		Dictionary<string, byte[]> modfiledict = new Dictionary<string, byte[]>();
 
-		foreach(ModData md in modlist)
+		foreach (ModData md in modlist)
 		{
-			if(md.jsonmodinfo.name == mod)
+			if (md.jsonmodinfo.name == mod)
 			{
 				modfiledict = md.modinfo.modFiles;
 			}
 		}
-		if(modfiledict.Count == 0)
+		if (modfiledict.Count == 0)
 		{
 			Debug.Log("[MODPACKS] An unexpected error happened while trying to force unload");
 			return;
 		}
 		else
 		{
-			foreach(KeyValuePair<string, byte[]> keyValuePair in modfiledict)
+			foreach (KeyValuePair<string, byte[]> keyValuePair in modfiledict)
 			{
 				if (keyValuePair.Key.Contains(".asset"))
 				{
@@ -1350,10 +1394,10 @@ static class Patch_Coroutine_UIHOOK_SceneLoad
 		if (!__result)
 		{
 			Debug.Log("[MODPACKS] Load main menu postfix " + ___sceneName);
-			if(___sceneName == "MainMenuScene")
+			if (___sceneName == "MainMenuScene")
 			{
 				Debug.Log("[MODPACKS] Here we go again: HOOKING UI");
-				//RaftModpackCreator.instanceModpack.HookUI();
+				RaftModpackCreator.instanceModpack.HookUI();
 			}
 		}
 	}
