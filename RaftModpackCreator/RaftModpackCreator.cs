@@ -231,10 +231,26 @@ public class RaftModpackCreator : Mod
 		Debug.Log("Hooking UI");
 
 		//Hooking onto the main menu to add new buttons
+		//Modpacks browser online
 		GameObject ModpacksButton = Instantiate(MenuButtonsParent.transform.Find("New Game").gameObject, MenuButtonsParent.transform);
 		ModpacksButton.transform.SetAsFirstSibling();
 		Debug.Log("namebutton: " + ModpacksButton.name);
-		ModpacksButton.GetComponentInChildren<Text>().text = "MODPACKS";
+		ModpacksButton.GetComponentInChildren<Text>().text = "PUBLIC MODPACKS";
+		ModpacksButton.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
+
+		ModpacksButton.GetComponent<Button>().onClick.RemoveAllListeners();
+
+		ModpacksButton.GetComponent<Button>().onClick.AddListener(() =>
+		{
+			Debug.Log("Modpack Browser");
+			//LaunchModpackBrowser();
+		});
+
+		//Modpack creator
+		ModpacksButton = Instantiate(MenuButtonsParent.transform.Find("New Game").gameObject, MenuButtonsParent.transform);
+		ModpacksButton.transform.SetAsFirstSibling();
+		Debug.Log("namebutton: " + ModpacksButton.name);
+		ModpacksButton.GetComponentInChildren<Text>().text = "MODPACK CREATOR";
 		ModpacksButton.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
 
 		ModpacksButton.GetComponent<Button>().onClick.RemoveAllListeners();
@@ -247,13 +263,14 @@ public class RaftModpackCreator : Mod
 
 
 
-		Debug.Log("Running debug check");
+
+		/*Debug.Log("Running debug check");
 		foreach (Transform transformn in MenuButtonsParent.GetComponentsInChildren<Transform>())
 		{
 
 			Debug.Log("name: " + transformn.gameObject.name);
 
-		}
+		}*/
 
 
 		//Instantiating the selection panel
