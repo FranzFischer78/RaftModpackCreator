@@ -230,37 +230,73 @@ public class RaftModpackCreator : Mod
 
 		Debug.Log("Hooking UI");
 
-		//Hooking onto the main menu to add new buttons
-		//Modpacks browser online
-		GameObject ModpacksButton = Instantiate(MenuButtonsParent.transform.Find("New Game").gameObject, MenuButtonsParent.transform);
-		ModpacksButton.transform.SetAsFirstSibling();
-		Debug.Log("namebutton: " + ModpacksButton.name);
-		ModpacksButton.GetComponentInChildren<Text>().text = "PUBLIC MODPACKS";
-		ModpacksButton.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
-
-		ModpacksButton.GetComponent<Button>().onClick.RemoveAllListeners();
-
-		ModpacksButton.GetComponent<Button>().onClick.AddListener(() =>
+		try
 		{
-			Debug.Log("Modpack Browser");
+			//Hooking onto the main menu to add new buttons
+			//Modpacks browser online
+			GameObject ModpacksButton = Instantiate(MenuButtonsParent.transform.Find("New Game").gameObject, MenuButtonsParent.transform);
+			ModpacksButton.transform.SetAsFirstSibling();
+			Debug.Log("namebutton: " + ModpacksButton.name);
+			ModpacksButton.GetComponentInChildren<Text>().text = "PUBLIC MODPACKS";
+			ModpacksButton.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
+
+			ModpacksButton.GetComponent<Button>().onClick.RemoveAllListeners();
+
+			ModpacksButton.GetComponent<Button>().onClick.AddListener(() =>
+			{
+				Debug.Log("Modpack Browser");
 			//LaunchModpackBrowser();
-		});
+			});
 
-		//Modpack creator
-		ModpacksButton = Instantiate(MenuButtonsParent.transform.Find("New Game").gameObject, MenuButtonsParent.transform);
-		ModpacksButton.transform.SetAsFirstSibling();
-		Debug.Log("namebutton: " + ModpacksButton.name);
-		ModpacksButton.GetComponentInChildren<Text>().text = "MODPACK CREATOR";
-		ModpacksButton.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
+			//Modpack creator
+			ModpacksButton = Instantiate(MenuButtonsParent.transform.Find("New Game").gameObject, MenuButtonsParent.transform);
+			ModpacksButton.transform.SetAsFirstSibling();
+			Debug.Log("namebutton: " + ModpacksButton.name);
+			ModpacksButton.GetComponentInChildren<Text>().text = "MODPACK CREATOR";
+			ModpacksButton.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
 
-		ModpacksButton.GetComponent<Button>().onClick.RemoveAllListeners();
+			ModpacksButton.GetComponent<Button>().onClick.RemoveAllListeners();
 
-		ModpacksButton.GetComponent<Button>().onClick.AddListener(() =>
+			ModpacksButton.GetComponent<Button>().onClick.AddListener(() =>
+			{
+				OpenModpackCreatorWindow();
+			});
+		}
+		catch(Exception e)
 		{
-			OpenModpackCreatorWindow();
-		});
+			Debug.Log("Error adding button to main menu raft ui: " + e);
+		}
+
+		Debug.Log("run debugging");
+		FindALLObjectsOfType<CanvasScaler>().ForEach(g => { Debug.Log("namgego : " + g.gameObject.name); });
+		Debug.Log("finished run debugging");
+
+		GameObject RmlMainMenuGO = FindObjectOfType<RaftModLoader.MainMenu>().gameObject;
+
+		
 
 
+		Debug.Log("FOUND RML main menu " + RmlMainMenuGO.gameObject.name);
+
+		GameObject LeftNavBar = RmlMainMenuGO.transform.Find("BG").transform.Find("LeftBar").transform.Find("RMLMainMenu_Slots").gameObject;
+
+		Debug.Log("FOUND REFS TO RML");
+		GameObject homeelemgo = LeftNavBar.transform.Find("RMLMainMenuLButton_Home").gameObject;
+
+
+		GameObject ModpackButton = Instantiate(homeelemgo, LeftNavBar.transform);
+		ModpackButton.name = "RMLMainMenuLButton_ModpackCreatePage";
+		ModpackButton.GetComponentInChildren<TMPro.TMP_Text>().text = "MANAGE MODPACKS";
+		ModpackButton.GetComponent<Button>().onClick.AddListener(() => { RaftModLoader.MainMenu.ChangeMenu("ModpackCreatePage"); });
+		GameObject ModpackCreatePageGO = Instantiate(hookedui.LoadAsset<GameObject>("ModpackCreatePage"), RaftModLoader.MainMenu.pages.transform);
+		ModpackCreatePageGO.name = "ModpackCreatePage";
+		RaftModLoader.MainMenu.menuPages.Add("ModpackCreatePage", ModpackCreatePageGO.AddComponent<RaftModpackCreatorPages.ModpackCreatePage>());
+		ModpackCreatePageGO.SetActive(false);
+		Debug.Log("lol" + ModpackCreatePageGO.name);
+		Debug.Log(RaftModLoader.MainMenu.pages.transform.Find("ModpackCreatePage").gameObject.name + " lol");
+		GameObject ModpackStoreButton = Instantiate(homeelemgo, LeftNavBar.transform);
+		ModpackStoreButton.name = "RMLMainMenuLButton_ModpackBrowser";
+		ModpackStoreButton.GetComponentInChildren<TMPro.TMP_Text>().text = "PUBLIC MODPACKS";
 
 
 
@@ -331,6 +367,14 @@ public class RaftModpackCreator : Mod
 
 
 
+	}
+
+
+	public static List<T> FindALLObjectsOfType<T>()
+	{
+		return UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects()
+			.SelectMany(g => g.GetComponentsInChildren<T>(true))
+			.ToList();
 	}
 
 	public void ReloadMods()

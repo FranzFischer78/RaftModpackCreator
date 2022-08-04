@@ -40,6 +40,7 @@
     <None Include="Assets\modpackcreatormessagebox.assets" />
     <None Include="Assets\modpacks_hookedui.assets" />
     <None Include="ModPackCreatorData\Modpacks.csfile" />
+    <Compile Include="ModpackCreatePage.cs" />
     <Compile Include="RaftModpackCreator.cs" />
   </ItemGroup>
   <ItemGroup>
