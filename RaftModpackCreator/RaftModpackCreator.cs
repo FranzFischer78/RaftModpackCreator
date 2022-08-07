@@ -209,6 +209,8 @@ public class RaftModpackCreator : Mod
 		Datafiles.Add(@"ModPackCreatorData/" + "packages.config");
 		Datafiles.Add(@"ModPackCreatorData/" + "modpackloader.assets");
 
+		CreateMessageBoxWin();
+
 	}
 
 	//Reload UI HOOK AFTER LEAVING A world from a game
@@ -1701,12 +1703,12 @@ public class RaftModpackCreator : Mod
 	public void CreateMessageBox(string Title, string Content)
 	{
 		//Debug.Log(Title + " : " + Content);
-
+		
 		MessageBoxWindow.SetActive(true);
 
 		MessageBoxWindow.transform.Find("ModpackCreator_MessageBoxTitle").GetComponent<Text>().text = Title;
 		MessageBoxWindow.transform.Find("ModpackCreator_MessageBoxContent").GetComponent<Text>().text = Content;
-		MessageBoxWindow.GetComponent<RectTransform>().SetAsLastSibling();
+		
 	}
 	public void CloseMessageBox()
 	{
