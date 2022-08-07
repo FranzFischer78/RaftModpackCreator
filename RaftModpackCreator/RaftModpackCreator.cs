@@ -26,9 +26,9 @@ public class RaftModpackCreator : Mod
 	GameObject menu;
 	GameObject NewModpackPanel;
 	GameObject EditModpackPanelGO;
-	GameObject MessageBoxWindow;
 
 	GameObject hookeduimenu;
+	GameObject MessageBoxWindow;
 
 
 
@@ -209,7 +209,6 @@ public class RaftModpackCreator : Mod
 		Datafiles.Add(@"ModPackCreatorData/" + "packages.config");
 		Datafiles.Add(@"ModPackCreatorData/" + "modpackloader.assets");
 
-		CreateMessageBoxWin();
 
 	}
 
@@ -366,14 +365,15 @@ public class RaftModpackCreator : Mod
 		}*/
 
 
-		//Instantiating the selection panel
 
 
+		//CreateMessageBoxWin();
 
 		//--- TEMPORARELY DISABLE MOD PROFILES ---
 		return;
 		//--- REMOVE TO REENABLE THE FUNCTIONALITY. PERM UNLOADING DOES NOT WORK PROPERLY. ENABLE AT YOUR OWN RISK!!! ---
-
+		
+		//Instantiating the selection panel
 		try
 		{
 			GameObject toInstantiate = hookedui.LoadAsset<GameObject>("ModpackWorldSelect");
@@ -1693,9 +1693,8 @@ public class RaftModpackCreator : Mod
 	#region MessageBox
 	public void CreateMessageBoxWin()
 	{
-		MessageBoxWindow = Instantiate(MessageBoxBundle.LoadAsset<GameObject>("ModpackCreator_MessageBox"), FindObjectOfType<RaftModpackCreatorPages.ModpackCreatePage>().gameObject.transform);
+		Debug.Log("passed inst");
 		DontDestroyOnLoad(MessageBoxWindow);
-		MessageBoxWindow.transform.Find("ModpackCreator_MessageBoxClose").GetComponent<Button>().onClick.AddListener(CloseMessageBox);
 		MessageBoxWindow.SetActive(false);
 
 	}
@@ -1703,8 +1702,8 @@ public class RaftModpackCreator : Mod
 	public void CreateMessageBox(string Title, string Content)
 	{
 		//Debug.Log(Title + " : " + Content);
-		
-		MessageBoxWindow.SetActive(true);
+		MessageBoxWindow = Instantiate(hookedui.LoadAsset<GameObject>("ModpackCreator_MessageBox"), hookeduimenu.transform);
+		MessageBoxWindow.transform.Find("ModpackCreator_MessageBoxClose").GetComponent<Button>().onClick.AddListener(CloseMessageBox);
 
 		MessageBoxWindow.transform.Find("ModpackCreator_MessageBoxTitle").GetComponent<Text>().text = Title;
 		MessageBoxWindow.transform.Find("ModpackCreator_MessageBoxContent").GetComponent<Text>().text = Content;
@@ -1712,7 +1711,7 @@ public class RaftModpackCreator : Mod
 	}
 	public void CloseMessageBox()
 	{
-		MessageBoxWindow.SetActive(false);
+		Destroy(MessageBoxWindow);
 	}
 	#endregion
 
