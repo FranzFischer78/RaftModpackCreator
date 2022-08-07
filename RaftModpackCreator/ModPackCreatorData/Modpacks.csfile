@@ -62,12 +62,14 @@ public class Modpacks : Mod
 
         string[] modlist = ReadDataFile("data.txt");
 
+        
+
 
 
 
         for(int i = 0; i<modlist.Length; i++)
 		{
-            LoadMod(modlist[i]);
+            LoadMod(FindNameBySlug(modlist[i]));
 		}
 
         StartCoroutine(MessageBox("Mods from modpack have been succesfully loaded!"));
@@ -124,6 +126,7 @@ public class Modpacks : Mod
                 line = reader.ReadLine();
                 if (line != null)
                 {
+                  
                     mods.Add(line);
                 }
 
@@ -136,6 +139,60 @@ public class Modpacks : Mod
 
 
    
+    }
+
+    public static string FindSlugByName(string name)
+    {
+        var tmp = HMLLibrary.ModManagerPage.modList;
+
+        string output = "";
+
+        tmp.ForEach(i => {
+
+            if (i.jsonmodinfo.name == name)
+            {
+                output = i.jsonmodinfo.updateUrl.Split('/')[6];
+            }
+
+        });
+
+        return output;
+    }
+
+    public static string FindNameBySlug(string slug)
+    {
+        var tmp = HMLLibrary.ModManagerPage.modList;
+
+        string output = "";
+
+        tmp.ForEach(i => {
+
+            if (i.jsonmodinfo.updateUrl.Split('/')[6] == slug)
+            {
+                output = i.jsonmodinfo.name;
+            }
+
+        });
+
+        return output;
+    }
+
+    public static string FindPathBySlug(string slug)
+    {
+        var tmp = HMLLibrary.ModManagerPage.modList;
+
+        string output = "";
+
+        tmp.ForEach(i => {
+
+            if (i.jsonmodinfo.updateUrl.Split('/')[6] == slug)
+            {
+                output = i.modinfo.modFile.Name;
+            }
+
+        });
+
+        return output;
     }
 
     public IEnumerator MessageBox(string Content)

@@ -8,8 +8,6 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
-using UnityEngine.Events;
 
 
 public class RaftModpackCreator : Mod
@@ -30,7 +28,7 @@ public class RaftModpackCreator : Mod
 	GameObject EditModpackPanelGO;
 	GameObject MessageBoxWindow;
 
-
+	GameObject hookeduimenu;
 
 
 
@@ -48,6 +46,7 @@ public class RaftModpackCreator : Mod
 	List<Rmod> rmodModnameAssoc = new List<Rmod>();
 
 
+	List<Modelem> allmodswithoutmodpackscache = new List<Modelem>();
 
 
 
@@ -60,6 +59,7 @@ public class RaftModpackCreator : Mod
 	//Current Modpack Variables
 	string CurrentModpackPath = "";
 	string CurrentModpackName = "";
+	List<string> CurrentModpackContent = new List<string>();
 
 
 	List<string> Datafiles = new List<string>();
@@ -194,11 +194,20 @@ public class RaftModpackCreator : Mod
 		hookedui = request7.assetBundle;
 		Loaded = true;
 		notification.Close();
-		notification = FindObjectOfType<HNotify>().AddNotification(HNotify.NotificationType.normal, "Loading finished! Press f7 to use the modpack creator ;)", 5, HNotify.CheckSprite);
+		notification = FindObjectOfType<HNotify>().AddNotification(HNotify.NotificationType.normal, "Finished loading modpacks!", 5, HNotify.CheckSprite);
 
-		Debug.Log("Loading finished! Press f7 to use the modpack creator ;)");
+		//Debug.Log("Loading finished! Press f7 to use the modpack creator ;)");
 
 		HookUI();
+
+		//ADD REFS for Datafiles
+		Datafiles.Add(@"ModPackCreatorData/" + "banner.jpg");
+		Datafiles.Add(@"ModPackCreatorData/" + "data.txt");
+		Datafiles.Add(@"ModPackCreatorData/" + "icon.png");
+		Datafiles.Add(@"ModPackCreatorData/" + "modinfo.jsonfile");
+		Datafiles.Add(@"ModPackCreatorData/" + "Modpacks.csfile");
+		Datafiles.Add(@"ModPackCreatorData/" + "packages.config");
+		Datafiles.Add(@"ModPackCreatorData/" + "modpackloader.assets");
 
 	}
 
@@ -230,7 +239,7 @@ public class RaftModpackCreator : Mod
 
 		Debug.Log("Hooking UI");
 
-		try
+	/*	try
 		{
 			//Hooking onto the main menu to add new buttons
 			//Modpacks browser online
@@ -245,7 +254,7 @@ public class RaftModpackCreator : Mod
 			ModpacksButton.GetComponent<Button>().onClick.AddListener(() =>
 			{
 				Debug.Log("Modpack Browser");
-			//LaunchModpackBrowser();
+				//LaunchModpackBrowser();
 			});
 
 			//Modpack creator
@@ -262,7 +271,7 @@ public class RaftModpackCreator : Mod
 				OpenModpackCreatorWindow();
 			});
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			Debug.Log("Error adding button to main menu raft ui: " + e);
 		}
@@ -271,33 +280,79 @@ public class RaftModpackCreator : Mod
 		FindALLObjectsOfType<CanvasScaler>().ForEach(g => { Debug.Log("namgego : " + g.gameObject.name); });
 		Debug.Log("finished run debugging");
 
+		*/
+
 		GameObject RmlMainMenuGO = FindObjectOfType<RaftModLoader.MainMenu>().gameObject;
 
-		
 
 
-		Debug.Log("FOUND RML main menu " + RmlMainMenuGO.gameObject.name);
+
 
 		GameObject LeftNavBar = RmlMainMenuGO.transform.Find("BG").transform.Find("LeftBar").transform.Find("RMLMainMenu_Slots").gameObject;
 
-		Debug.Log("FOUND REFS TO RML");
 		GameObject homeelemgo = LeftNavBar.transform.Find("RMLMainMenuLButton_Home").gameObject;
 
 
 		GameObject ModpackButton = Instantiate(homeelemgo, LeftNavBar.transform);
 		ModpackButton.name = "RMLMainMenuLButton_ModpackCreatePage";
 		ModpackButton.GetComponentInChildren<TMPro.TMP_Text>().text = "MANAGE MODPACKS";
-		ModpackButton.GetComponent<Button>().onClick.AddListener(() => { RaftModLoader.MainMenu.ChangeMenu("ModpackCreatePage"); });
+		ModpackButton.GetComponent<Button>().onClick.AddListener(() => { RaftModLoader.MainMenu.ChangeMenu("ModpackCreatePage"); RaftModpackCreatorPages.ModpackCreatePage.UpdateModpackSelector(GetExistingModpacks()); });
 		GameObject ModpackCreatePageGO = Instantiate(hookedui.LoadAsset<GameObject>("ModpackCreatePage"), RaftModLoader.MainMenu.pages.transform);
 		ModpackCreatePageGO.name = "ModpackCreatePage";
 		RaftModLoader.MainMenu.menuPages.Add("ModpackCreatePage", ModpackCreatePageGO.AddComponent<RaftModpackCreatorPages.ModpackCreatePage>());
 		ModpackCreatePageGO.SetActive(false);
+
 		Debug.Log("lol" + ModpackCreatePageGO.name);
 		Debug.Log(RaftModLoader.MainMenu.pages.transform.Find("ModpackCreatePage").gameObject.name + " lol");
 		GameObject ModpackStoreButton = Instantiate(homeelemgo, LeftNavBar.transform);
 		ModpackStoreButton.name = "RMLMainMenuLButton_ModpackBrowser";
-		ModpackStoreButton.GetComponentInChildren<TMPro.TMP_Text>().text = "PUBLIC MODPACKS";
+		ModpackStoreButton.GetComponentInChildren<TMPro.TMP_Text>().text = "COMING SOON";
 
+		hookeduimenu = ModpackCreatePageGO;
+		RaftModpackCreatorPages.ModpackCreatePage.ModpackCreator_ModpackChoose = ModpackCreatePageGO.transform.Find("ModpackCreator_ModpackChoose").gameObject;
+
+
+		//INIT RMC UI
+		GameObject ModpackContent = ModpackCreatePageGO.transform.Find("ModpackCreator_ModpackContent").gameObject;
+		GameObject Modlist = ModpackCreatePageGO.transform.Find("ModpackCreator_Modslist").gameObject;
+
+		allmodswithoutmodpackscache = GetAllModsExceptModpacks();
+
+		GameObject ModlistContainer = Modlist.gameObject.transform.Find("Modlist_Viewport").gameObject.transform.Find("Modlist_Container").gameObject;
+		GameObject prefab = assetModlistModitem.LoadAsset<GameObject>("ModpackCreator_Modslist_Moditem");
+
+		allmodswithoutmodpackscache.ForEach(i =>
+		{
+			GameObject ModListEntryElem = Instantiate(prefab, ModlistContainer.transform);
+
+			ModListEntryElem.GetComponentInChildren<Text>().text = i.name;
+
+			ModListEntryElem.GetComponent<Button>().onClick.AddListener(() => AddModToModpack(i.name, i.slug));
+
+		});
+
+
+
+		//init dropdown
+		GameObject dropdown = RaftModpackCreatorPages.ModpackCreatePage.ModpackCreator_ModpackChoose;
+
+		dropdown.GetComponent<Dropdown>().onValueChanged.AddListener((int index) =>
+		{
+			if(index == 0)
+			{
+				CurrentModpackContent.Clear();
+				return;
+			}
+
+			LoadModpack(index-1, ModpackContent);
+		});
+		//init new button
+		GameObject ModpackNewButton = ModpackCreatePageGO.transform.Find("ModpackCreator_NewMod").gameObject;
+		ModpackNewButton.GetComponent<Button>().onClick.AddListener(NewModpack);
+
+		//init save button
+		GameObject ModpackSaveButton = ModpackCreatePageGO.transform.Find("ModpackCreator_SaveMod").gameObject;
+		ModpackSaveButton.GetComponent<Button>().onClick.AddListener(SaveModpack);
 
 
 		/*Debug.Log("Running debug check");
@@ -313,9 +368,9 @@ public class RaftModpackCreator : Mod
 
 
 
-
-
-		//Debug.Log("Found parent");
+		//--- TEMPORARELY DISABLE MOD PROFILES ---
+		return;
+		//--- REMOVE TO REENABLE THE FUNCTIONALITY. PERM UNLOADING DOES NOT WORK PROPERLY. ENABLE AT YOUR OWN RISK!!! ---
 
 		try
 		{
@@ -768,6 +823,8 @@ public class RaftModpackCreator : Mod
 
 	#endregion
 
+
+// --- TO DISABLE
 	#region Main Menu
 	public void LoadMainMenu(bool init)
 	{
@@ -848,7 +905,7 @@ public class RaftModpackCreator : Mod
 
 				ModListEntryElem.transform.Find("Text").gameObject.GetComponent<Text>().text = ModinfoJson["name"].ToString();
 
-				ModListEntryElem.GetComponent<Button>().onClick.AddListener(() => AddModToModpack(ModinfoJson["name"].ToString()));
+				//ModListEntryElem.GetComponent<Button>().onClick.AddListener(() => AddModToModpack(ModinfoJson["name"].ToString()));
 
 
 				i += 30;
@@ -890,12 +947,14 @@ public class RaftModpackCreator : Mod
 
 
 	#endregion
-	#region MainmenuButtons
+
+
+	#region RMCBUTTONS
 	public void NewModpack()
 	{
 
 		//Instantiate Modpack Panel and assign Functions
-		NewModpackPanel = Instantiate(SetupModpackPanel.LoadAsset<GameObject>("ModpackCreator_SetupModpackPanel"), Canvas.transform);
+		NewModpackPanel = Instantiate(hookedui.LoadAsset<GameObject>("ModpackCreator_SetupModpackPanel"), FindObjectOfType<RaftModpackCreatorPages.ModpackCreatePage>().gameObject.transform);
 		//Idk if useful but should prevent if raft has several main menu scenes
 
 		DontDestroyOnLoad(NewModpackPanel);
@@ -908,6 +967,7 @@ public class RaftModpackCreator : Mod
 
 	}
 
+	//--- TO DISABLE
 	public void EditModpack()
 	{
 
@@ -978,7 +1038,7 @@ public class RaftModpackCreator : Mod
 
 			ModListEntryElem.transform.Find("Text").gameObject.GetComponent<Text>().text = modname;
 
-			ModListEntryElem.GetComponent<Button>().onClick.AddListener(() => LoadModpack(modname));
+			//ModListEntryElem.GetComponent<Button>().onClick.AddListener(() => LoadModpack(modname));
 
 		}
 
@@ -997,12 +1057,12 @@ public class RaftModpackCreator : Mod
 	public void CreateNewModpack()
 	{
 		string ModpackInputName = NewModpackPanel.transform.Find("SetupModpack_InputName").gameObject.transform.Find("Text").gameObject.GetComponent<Text>().text;
-		//Banner and Icon will follow later
+		//Banner and Icon will follow later: not that important. Perhaps for the modpacks "store"
 
 
 		if (!ModpackInputName.IsNullOrEmpty())
 		{
-			GameObject ModlistContainer = menu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
+			GameObject ModlistContainer = hookeduimenu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
 
 			foreach (Transform child in ModlistContainer.transform)
 			{
@@ -1010,6 +1070,9 @@ public class RaftModpackCreator : Mod
 				Destroy(child.gameObject);
 
 			}
+
+			//Clean the cache
+			CurrentModpackContent.Clear();
 			//Set current vars
 			CurrentModpackName = ModpackInputName;
 			ModpackInputName = ModpackInputName.Replace(" ", "-");
@@ -1017,6 +1080,12 @@ public class RaftModpackCreator : Mod
 
 			//Debug.Log(CurrentModpackName);
 			//Debug.Log(CurrentModpackPath);
+			var allmodpacks = GetExistingModpacks();
+			allmodpacks.Add(CurrentModpackName);
+			Debug.Log("almmodpaacks count " + allmodpacks.Count);
+
+			RaftModpackCreatorPages.ModpackCreatePage.UpdateModpackSelector(allmodpacks);
+			//RaftModpackCreatorPages.ModpackCreatePage.ModpackCreator_ModpackChoose.GetComponent<Dropdown>().value = (int)(allmodpacks.Count);
 
 			Destroy(NewModpackPanel);
 		}
@@ -1032,6 +1101,8 @@ public class RaftModpackCreator : Mod
 	}
 	#endregion
 
+
+	//--- TO DISABLE
 	#region EditModpackPanelFunctions
 
 	public void CloseEditModpackPanel()
@@ -1042,10 +1113,11 @@ public class RaftModpackCreator : Mod
 
 	#endregion
 
-	//SaveModpack Function
+
+	#region Saveandloadmodpacks
 	public void SaveModpack()
 	{
-		if (CurrentModpackPath != null && CurrentModpackPath != null)
+		if (CurrentModpackName != null && CurrentModpackPath != null)
 		{
 			//Save Modpack
 			if (File.Exists(CurrentModpackPath))
@@ -1143,9 +1215,52 @@ public class RaftModpackCreator : Mod
 		}
 	}
 
-	public void LoadModpack(string Modpack)
+	public void LoadModpack(int modpackindex, GameObject modpackcontentlist)
 	{
-		GameObject ModlistContainer = menu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
+		var modpacktoload = GetExistingModpacksWithFilename()[modpackindex];
+		ModData modpackmoddata = new ModData();
+
+		HMLLibrary.ModManagerPage.modList.ForEach(i =>
+		{
+			if(i.jsonmodinfo.name == modpacktoload.name)
+			{
+				modpackmoddata = i;
+			}
+		}
+		);
+
+		try
+		{
+
+			if (modpackmoddata == null)
+			{
+				Debug.Log("The modpack could not be found!");
+				CreateMessageBox("Unexpected!", "The modpack could not be found!");
+				return;
+			}
+
+			if (!modpackmoddata.modinfo.modFiles.ContainsKey("data.txt"))
+			{
+				Debug.Log("The specified file is not a modpack!");
+				CreateMessageBox("Unexpected!", "The specified file is not a modpack!");
+				return;
+			}
+		}
+		catch(Exception e)
+		{
+			CreateMessageBox("Unexpected!", "Moddata does not contain the nescessary information!");
+			Debug.Log("Unexpected moddata error: " + e);
+			Debug.Log(modpackmoddata.modinfo.modFiles.Keys.Count);
+
+			foreach(string key in modpackmoddata.modinfo.modFiles.Keys)
+			{
+				Debug.Log("Key: " + key);
+			}
+			return;
+		}
+
+
+		GameObject ModlistContainer = modpackcontentlist.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
 
 		foreach (Transform child in ModlistContainer.transform)
 		{
@@ -1153,8 +1268,62 @@ public class RaftModpackCreator : Mod
 			Destroy(child.gameObject);
 
 		}
+		var DataTxtContent = "";
+		try
+		{
+			var bytes = modpackmoddata.modinfo.modFiles["data.txt"];
+			DataTxtContent = System.Text.Encoding.UTF8.GetString(bytes);
+		}
+		catch(Exception e)
+		{
+			CreateMessageBox("Unexpected!", "Moddata does not contain the nescessary information!");
+			Debug.Log("Unexpected moddata error: " + e);
+			Debug.Log(modpackmoddata.modinfo.modFiles.Keys.Count);
 
-		string tmpmodpack = Modpack.Replace(' ', '-');
+			foreach (string key in modpackmoddata.modinfo.modFiles.Keys)
+			{
+				Debug.Log("Key: " + key);
+			}
+			return;
+		}
+
+		if (DataTxtContent.IsNullOrEmpty())
+		{Debug.Log("data.txt does not exist or is empty!");
+			CreateMessageBox("Unexpected!", "data.txt does not exist or is empty!");
+			return;
+		}
+
+		List<string> mods = new List<string>();
+
+		using (StringReader reader = new StringReader(DataTxtContent))
+		{
+			string line = string.Empty;
+			do
+			{
+				line = reader.ReadLine();
+				if (line != null)
+				{
+					mods.Add(line);
+				}
+
+			} while (line != null);
+		}
+
+		string[] modsarray = mods.ToArray();
+
+		CurrentModpackContent.Clear();
+
+		foreach (string moditem in modsarray)
+		{
+			Debug.Log(moditem);
+			AddModToModpack(FindNameBySlug(moditem), moditem);
+		}
+
+		CurrentModpackName = modpacktoload.name;
+		//Modpack = Modpack.Replace(" ", "-");
+		CurrentModpackPath = modpacktoload.filename;
+
+		/*string tmpmodpack = Modpack.Replace(' ', '-');
 
 
 		string rmod = Path.GetFullPath(@"mods\" + tmpmodpack + ".rmod");
@@ -1183,58 +1352,150 @@ public class RaftModpackCreator : Mod
 			Debug.LogWarning("Zip Error: " + e);
 			CreateMessageBox("Unexpected!", "The specified file is not a modpack");
 			return;
-		}
-
-
-
-		List<string> mods = new List<string>();
-
-		using (StringReader reader = new StringReader(datacontent))
-		{
-			string line = string.Empty;
-			do
-			{
-				line = reader.ReadLine();
-				if (line != null)
-				{
-					mods.Add(line);
-				}
-
-			} while (line != null);
-		}
-
-		string[] modsarray = mods.ToArray();
-
-		foreach (string moditem in modsarray)
-		{
-			AddModToModpack(moditem);
-		}
-
-		CurrentModpackName = Modpack;
-		Modpack = Modpack.Replace(" ", "-");
-		CurrentModpackPath = @"mods\" + Modpack + ".rmod";
-
-		Destroy(EditModpackPanelGO);
+		}*/
+		RaftModpackCreatorPages.ModpackCreatePage.UpdateModpackSelector(GetExistingModpacks());
 
 
 
 	}
 
+	#endregion
+
+	public static List<Modpack> GetExistingModpacksWithFilename()
+	{
+
+		List<Modpack> modpacks = new List<Modpack>();
+
+		HMLLibrary.ModManagerPage.modList.ForEach(i =>
+		{
+
+			if (i.modinfo.modFiles.ContainsKey("data.txt"))
+			{
+				Modpack modpack = new Modpack();
+
+				modpack.filename = i.modinfo.modFile.FullName;
+				modpack.name = i.jsonmodinfo.name;
+
+				modpacks.Add(modpack);
+
+				Debug.Log("file is a modpack" + modpack.filename + "    " + modpack.name);
+			}
+			else
+			{
+				Debug.Log("The file is not a modpack");
+			}
+
+		}
+		);
+
+		return modpacks;
+
+
+	}
+
+	public static List<Modelem> GetAllModsExceptModpacks()
+	{
+		var tmp = GetExistingModpacks();
+		var allmods = HMLLibrary.ModManagerPage.modList;
+
+		List<Modelem> modelems = new List<Modelem>();
+
+		allmods.ForEach(i =>
+		{
+			if (!tmp.Contains(i.jsonmodinfo.name))
+			{
+				Modelem modelem = new Modelem();
+				modelem.name = i.jsonmodinfo.name;
+				modelem.slug = i.jsonmodinfo.updateUrl.Split('/')[6];
+				modelem.filename = i.modinfo.modFile.Name;
+				modelems.Add(modelem);
+			}
+		});
+
+		return modelems;
+
+
+	}
+
+
+	public static List<string> GetExistingModpacks()
+	{
+		List<string> modpacks = new List<string>();
+		List<Modpack> modpackstmp = new List<Modpack>();
+
+		modpackstmp = GetExistingModpacksWithFilename();
+		modpackstmp.ForEach(i => modpacks.Add(i.name));
+
+		return modpacks;
+
+
+	}
+
+	public static string FindSlugByName(string name)
+	{
+		var tmp = HMLLibrary.ModManagerPage.modList;
+
+		string output = "";
+
+		tmp.ForEach(i => { 
+			
+			if(i.jsonmodinfo.name == name)
+			{
+				output= i.jsonmodinfo.updateUrl.Split('/')[6];
+			}
+		
+		});
+
+		return output;
+	}
+
+	public static string FindNameBySlug(string slug)
+	{
+		var tmp = HMLLibrary.ModManagerPage.modList;
+
+		string output = "";
+
+		tmp.ForEach(i => {
+
+			if (i.jsonmodinfo.updateUrl.Split('/')[6] == slug)
+			{
+				output = i.jsonmodinfo.name;
+			}
+
+		});
+
+		return output;
+	}
+
+	public static string FindPathBySlug(string slug)
+	{
+		var tmp = HMLLibrary.ModManagerPage.modList;
+
+		string output = "";
+
+		tmp.ForEach(i => {
+
+			if (i.jsonmodinfo.updateUrl.Split('/')[6] == slug)
+			{
+				output = i.modinfo.modFile.Name;
+			}
+
+		});
+
+		return output;
+	}
 
 	public string GetModlistItems()
 	{
 		string Items = "";
 
-		GameObject ModlistContainer = menu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
+		//GameObject ModlistContainer = menu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
 
+		
 
-
-
-
-		foreach (Transform child in ModlistContainer.transform)
+		foreach (string elem in CurrentModpackContent)
 		{
-			string textelem = child.transform.Find("ModpackCreator_Modeditor_ModitemElem").gameObject.transform.Find("Text").gameObject.GetComponent<Text>().text;
-			Items += textelem + "\n";
+			Items += elem + "\n";
 
 		}
 
@@ -1242,7 +1503,8 @@ public class RaftModpackCreator : Mod
 		return Items;
 	}
 
-	public string[] GetModlistItemsArray()
+	//--- WEIRD FUNCTION
+	/*public string[] GetModlistItemsArray()
 	{
 		List<string> Items = new List<string>();
 
@@ -1261,13 +1523,13 @@ public class RaftModpackCreator : Mod
 
 
 		return Items.ToArray();
-	}
+	}*/
 
 	public void CopyRmodsToModpack(string Temppath)
 	{
 		string destination = Temppath + @"Mods\";
 
-		var ModlistItemsArr = GetModlistItemsArray();
+		//var ModlistItemsArr = GetModlistItemsArray();
 
 
 		/*Debug.Log(InstalledRmods);
@@ -1282,7 +1544,7 @@ public class RaftModpackCreator : Mod
 
 		//The following is def. not the way to go. Real cpu intensive
 		//Will patch that as soon as possible
-		var rmodFiles = Directory.EnumerateFiles(@"mods\");
+		/*var rmodFiles = Directory.EnumerateFiles(@"mods\");
 		List<string> rmodModNames = new List<string>();
 
 
@@ -1334,16 +1596,21 @@ public class RaftModpackCreator : Mod
 			var path = rmodFilesArr[rmodModNames.IndexOf(item)];
 			rmodFilesUsedArrr.Add(path);
 			File.Copy(path, destination + Path.GetFileName(path), true);
-		}
+		}*/
+
+
+
 
 		//Wrtie rmod data file
 		string Items = "";
 
 
 
-		foreach (var rmodFile in rmodFilesUsedArrr)
+		foreach (var rmodFile in CurrentModpackContent)
 		{
-			Items += Path.GetFileName(rmodFile) + "\n";
+			var path = FindPathBySlug(rmodFile);
+
+			Items += Path.GetFileName(path) + "\n";
 		}
 
 
@@ -1356,10 +1623,18 @@ public class RaftModpackCreator : Mod
 
 
 	#region Add/Remove to/from Modpack
-	public void AddModToModpack(string Modname)
+	public void AddModToModpack(string Modname, string slug)
 	{
+		if (CurrentModpackContent.Contains(slug))
+		{
+			CreateMessageBox("Don't spam :)", "Can't have a mod twice in a modpack");
+			return;
+		}
+
+		CurrentModpackContent.Add(slug);
+
 		//Check if it's in
-		GameObject ModlistContainer = menu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
+		/*GameObject ModlistContainer = FindObjectOfType<RaftModpackCreatorPages.ModpackCreatePage>().gameObject.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
 
 		foreach (Transform child in ModlistContainer.transform)
 		{
@@ -1371,10 +1646,10 @@ public class RaftModpackCreator : Mod
 
 			}
 
-		}
+		}*/
 
 
-		GameObject ModeditorContainer = menu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
+		GameObject ModeditorContainer = FindObjectOfType<RaftModpackCreatorPages.ModpackCreatePage>().gameObject.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
 		GameObject prefab = assetModeditorModitem.LoadAsset<GameObject>("ModpackCreator_Modeditor_Moditem");
 
 		GameObject ModeditorEntryElem = Instantiate(prefab, ModeditorContainer.transform);
@@ -1382,14 +1657,14 @@ public class RaftModpackCreator : Mod
 		ModeditorEntryElem.transform.Find("ModpackCreator_Modeditor_ModitemElem").gameObject.transform.Find("Text").gameObject.GetComponent<Text>().text = Modname;
 
 		//ModeditorEntryElem.transform.Find("Modeditor_DelElemButton").gameObject.GetComponent<Button>().onClick.AddListener(() => RemoveFromModpack(Modname));
-		ModeditorEntryElem.transform.Find("ModpackCreator_Modeditor_ModitemElem").gameObject.GetComponent<Button>().onClick.AddListener(() => RemoveFromModpack(Modname));
+		ModeditorEntryElem.transform.Find("ModpackCreator_Modeditor_ModitemElem").gameObject.GetComponent<Button>().onClick.AddListener(() => RemoveFromModpack(Modname, slug));
 
 
 	}
 
-	public void RemoveFromModpack(string Modname)
+	public void RemoveFromModpack(string Modname, string slug)
 	{
-		GameObject ModlistContainer = menu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
+		GameObject ModlistContainer = hookeduimenu.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
 
 		foreach (Transform child in ModlistContainer.transform)
 		{
@@ -1402,6 +1677,8 @@ public class RaftModpackCreator : Mod
 			}
 
 		}
+
+		CurrentModpackContent.Remove(FindSlugByName(slug));
 	}
 
 	#endregion
@@ -1410,20 +1687,22 @@ public class RaftModpackCreator : Mod
 	#region MessageBox
 	public void CreateMessageBoxWin()
 	{
-		MessageBoxWindow = Instantiate(MessageBoxBundle.LoadAsset<GameObject>("ModpackCreator_MessageBox"), Canvas.transform);
+		/*MessageBoxWindow = Instantiate(MessageBoxBundle.LoadAsset<GameObject>("ModpackCreator_MessageBox"), FindObjectOfType<RaftModLoader.MainMenu>().gameObject.transform);
 		DontDestroyOnLoad(MessageBoxWindow);
 		MessageBoxWindow.transform.Find("ModpackCreator_MessageBoxClose").GetComponent<Button>().onClick.AddListener(CloseMessageBox);
-		MessageBoxWindow.SetActive(false);
+		MessageBoxWindow.SetActive(false);*/
 
 	}
 
 	public void CreateMessageBox(string Title, string Content)
 	{
+		Debug.Log(Title + " : " + Content);
+/*
 		MessageBoxWindow.SetActive(true);
 
 		MessageBoxWindow.transform.Find("ModpackCreator_MessageBoxTitle").GetComponent<Text>().text = Title;
 		MessageBoxWindow.transform.Find("ModpackCreator_MessageBoxContent").GetComponent<Text>().text = Content;
-		MessageBoxWindow.GetComponent<RectTransform>().SetAsLastSibling();
+		MessageBoxWindow.GetComponent<RectTransform>().SetAsLastSibling();*/
 	}
 	public void CloseMessageBox()
 	{
@@ -1473,3 +1752,18 @@ static class Patch_Coroutine_UIHOOK_SceneLoad
 
 
 #endregion
+
+public class Modpack
+{
+	public string name;
+	public string filename;
+
+}
+
+public class Modelem
+{
+	public string name;
+	public string filename;
+	public string slug;
+
+}
