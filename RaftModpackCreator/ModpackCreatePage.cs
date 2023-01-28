@@ -15,6 +15,8 @@ namespace RaftModpackCreatorPages
 
 		public static GameObject ModpackCreator_ModpackChoose;
 
+		public static GameObject ModpackCreator_includemodtoggle;
+
 
 		public void Start()
 		{
@@ -22,7 +24,7 @@ namespace RaftModpackCreatorPages
 		}
 
 
-		public static void UpdateModpackSelector(List<string> modpacklist)
+		public static void UpdateModpackSelector(List<string> modpacklist, bool selectLastAdded)
 		{
 			Dropdown dropdownEl = ModpackCreator_ModpackChoose.GetComponent<Dropdown>();
 			dropdownEl.ClearOptions();
@@ -30,6 +32,7 @@ namespace RaftModpackCreatorPages
 			modpacklist.Insert(0, "CHOOSE A MODPACK");
 
 			dropdownEl.AddOptions(modpacklist);
+			//dropdownEl.value = dropdownEl.options.Count -1;
 
 		}
 
