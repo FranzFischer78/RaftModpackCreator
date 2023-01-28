@@ -124,51 +124,6 @@ public class RaftModpackCreator : Mod
 
 	}
 
-	public void Update()
-	{
-		/*if (Loaded)
-		{
-			if (Input.GetKeyDown(KeyCode.F7))
-			{
-				if (RAPI.IsCurrentSceneMainMenu() && IsMenuOpen == false)
-				{
-					if (GameObject.Find("ModpackCreator_Canvas") != null)
-					{
-						LoadMainMenu(false);
-					}
-					if (GameObject.Find("ModpackCreator_Canvas") == null)
-					{
-						LoadMainMenu(true);
-					}
-				}
-			}
-
-		}*/
-
-
-	}
-
-	public void OpenModpackCreatorWindow()
-	{
-		if (Loaded)
-		{
-
-			if (RAPI.IsCurrentSceneMainMenu() && IsMenuOpen == false)
-			{
-				if (GameObject.Find("ModpackCreator_Canvas") != null)
-				{
-					LoadMainMenu(false);
-				}
-				if (GameObject.Find("ModpackCreator_Canvas") == null)
-				{
-					LoadMainMenu(true);
-				}
-			}
-
-		}
-	}
-
-
 	//Initialising stuff for assets and ui
 	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
 	public IEnumerator InitFunc()
@@ -547,7 +502,7 @@ public class RaftModpackCreator : Mod
 						}
 					}
 				}
-			});             
+			});
 			//listener end
 
 
@@ -849,129 +804,7 @@ public class RaftModpackCreator : Mod
 	#endregion
 
 
-	// --- TO DISABLE
-	#region Main Menu
-	public void LoadMainMenu(bool init)
-	{
-		IsMenuOpen = true;
 
-		if (init)
-		{
-
-			Canvas = Instantiate(asset.LoadAsset<GameObject>("ModpackCreator_Canvas"), Vector3.zero, Quaternion.identity);
-			DontDestroyOnLoad(Canvas);
-			menu = Canvas.transform.Find("ModpackCreator_MainPanel").gameObject;
-
-			//Buttons
-			menu.transform.Find("ModpackCreator_Quitbutton").gameObject.GetComponent<Button>().onClick.AddListener(CloseMenu);
-			menu.transform.Find("ModpackCreator_NewMod").gameObject.GetComponent<Button>().onClick.AddListener(NewModpack);
-			menu.transform.Find("ModpackCreator_EditMod").gameObject.GetComponent<Button>().onClick.AddListener(EditModpack);
-			menu.transform.Find("ModpackCreator_SaveMod").gameObject.GetComponent<Button>().onClick.AddListener(SaveModpack);
-		}
-		else
-		{
-			menu.SetActive(true);
-		}
-
-		var rmodFiles = Directory.EnumerateFiles(@"mods\");
-
-		int i = 0;
-
-		foreach (object rmod in rmodFiles)
-		{
-
-			if (Path.GetExtension(rmod.ToString()) == ".rmod")
-			{
-
-				InstalledRmods.Add(rmod.ToString());
-
-				//Read rmod
-				string ModInfo = "";
-
-				try
-				{
-
-					using (System.IO.Compression.ZipArchive archive = System.IO.Compression.ZipFile.Open(rmod.ToString(), System.IO.Compression.ZipArchiveMode.Read))
-					{
-						System.IO.Compression.ZipArchiveEntry entry = archive.GetEntry("modinfo.json");
-
-						using (StreamReader sr = new StreamReader(entry.Open()))
-						{
-							ModInfo = sr.ReadToEnd();
-
-							InstalledModNames.Add(ModInfo);
-
-						}
-
-					}
-				}
-				catch (Exception e)
-				{
-					Debug.LogWarning("Zip Error: " + e);
-				}
-
-
-
-				JObject ModinfoJson = JObject.Parse(ModInfo);
-
-				GameObject ModlistContainer = menu.transform.Find("ModpackCreator_Modslist").gameObject.transform.Find("Modlist_Viewport").gameObject.transform.Find("Modlist_Container").gameObject;
-
-				GameObject prefab = assetModlistModitem.LoadAsset<GameObject>("ModpackCreator_Modslist_Moditem");
-
-
-
-				GameObject ModListEntryElem = Instantiate(prefab, ModlistContainer.transform);
-
-
-				ModListEntryElem.GetComponent<RectTransform>().anchoredPosition3D = new Vector3(ModListEntryElem.GetComponent<RectTransform>().anchoredPosition3D.x, ModListEntryElem.GetComponent<RectTransform>().anchoredPosition3D.y - i, ModListEntryElem.GetComponent<RectTransform>().anchoredPosition3D.z);
-
-
-				//Debug.Log("Modinfojsonname: " + ModinfoJson["name"]);
-
-				ModListEntryElem.transform.Find("Text").gameObject.GetComponent<Text>().text = ModinfoJson["name"].ToString();
-
-				//ModListEntryElem.GetComponent<Button>().onClick.AddListener(() => AddModToModpack(ModinfoJson["name"].ToString()));
-
-
-				i += 30;
-
-
-
-
-
-
-
-
-
-
-
-			}
-		}
-
-		CreateMessageBoxWin();
-
-
-
-
-		//Write files for Datafiles (Modpack mod files)
-		Datafiles.Add(@"ModPackCreatorData/" + "banner.jpg");
-		Datafiles.Add(@"ModPackCreatorData/" + "data.txt");
-		Datafiles.Add(@"ModPackCreatorData/" + "icon.png");
-		Datafiles.Add(@"ModPackCreatorData/" + "modinfo.jsonfile");
-		Datafiles.Add(@"ModPackCreatorData/" + "Modpacks.csfile");
-		Datafiles.Add(@"ModPackCreatorData/" + "packages.config");
-		Datafiles.Add(@"ModPackCreatorData/" + "modpackloader.assets");
-	}
-
-
-	public void CloseMenu()
-	{
-		IsMenuOpen = false;
-		menu.SetActive(false);
-	}
-
-
-	#endregion
 
 
 	#region RMCBUTTONS
@@ -992,85 +825,6 @@ public class RaftModpackCreator : Mod
 
 	}
 
-	//--- TO DISABLE
-	public void EditModpack()
-	{
-
-		EditModpackPanelGO = Instantiate(EditModpackPanel.LoadAsset<GameObject>("ModpackCreator_Editmodpackpanel"), Canvas.transform);
-
-		EditModpackPanelGO.transform.Find("EditModpack_ClosePanel").GetComponent<Button>().onClick.AddListener(CloseEditModpackPanel);
-
-
-		DontDestroyOnLoad(EditModpackPanelGO);
-
-		InstalledRmods.Clear();
-		InstalledModNames.Clear();
-
-		var rmodFiles = Directory.EnumerateFiles(@"mods\");
-
-
-		foreach (object rmod in rmodFiles)
-		{
-
-			if (Path.GetExtension(rmod.ToString()) == ".rmod")
-			{
-
-				InstalledRmods.Add(rmod.ToString());
-
-				//Read rmod
-				string ModInfo = "";
-
-				try
-				{
-
-					using (System.IO.Compression.ZipArchive archive = System.IO.Compression.ZipFile.Open(rmod.ToString(), System.IO.Compression.ZipArchiveMode.Read))
-					{
-						System.IO.Compression.ZipArchiveEntry entry = archive.GetEntry("modinfo.json");
-
-						using (StreamReader sr = new StreamReader(entry.Open()))
-						{
-							ModInfo = sr.ReadToEnd();
-
-							JObject ModinfoJson = JObject.Parse(ModInfo);
-
-							InstalledModNames.Add(ModinfoJson["name"].ToString());
-
-						}
-
-					}
-				}
-				catch (Exception e)
-				{
-					Debug.LogWarning("Zip Error: " + e);
-				}
-			}
-		}
-
-
-
-		//Load Mods list
-
-		foreach (string modname in InstalledModNames)
-		{
-
-			GameObject ModlistContainer = EditModpackPanelGO.transform.Find("Editmodpackpanel_modlist").gameObject.transform.Find("Editmodpackpanel_modlist_Viewport").gameObject.transform.Find("Editmodpackpanel_modlist_Container").gameObject;
-
-			GameObject prefab = assetModlistModitem.LoadAsset<GameObject>("ModpackCreator_Modslist_Moditem");
-
-
-			GameObject ModListEntryElem = Instantiate(prefab, ModlistContainer.transform);
-
-
-			ModListEntryElem.transform.Find("Text").gameObject.GetComponent<Text>().text = modname;
-
-			//ModListEntryElem.GetComponent<Button>().onClick.AddListener(() => LoadModpack(modname));
-
-		}
-
-
-
-
-	}
 
 
 
@@ -1124,18 +878,6 @@ public class RaftModpackCreator : Mod
 	{
 		Destroy(NewModpackPanel);
 	}
-	#endregion
-
-
-	//--- TO DISABLE
-	#region EditModpackPanelFunctions
-
-	public void CloseEditModpackPanel()
-	{
-		Destroy(EditModpackPanelGO);
-	}
-
-
 	#endregion
 
 
@@ -1264,7 +1006,6 @@ public class RaftModpackCreator : Mod
 			}
 			);
 
-			Debug.Log("Pass1");
 
 			try
 			{
@@ -1306,7 +1047,6 @@ public class RaftModpackCreator : Mod
 
 			}
 
-			Debug.Log("Pass2");
 
 			var DataTxtContent = "";
 			try
@@ -1350,7 +1090,6 @@ public class RaftModpackCreator : Mod
 				} while (line != null);
 			}
 
-			Debug.Log("Pass3");
 
 			string[] modsarray = mods.ToArray();
 
@@ -1361,7 +1100,6 @@ public class RaftModpackCreator : Mod
 				Debug.Log("moditem" + moditem);
 				AddModToModpack(FindNameBySlug(moditem), moditem);
 			}
-			Debug.Log("Pass4");
 
 			//Read rmoddatatxt
 			var RmodDataTxtContent = "";
@@ -1416,7 +1154,6 @@ public class RaftModpackCreator : Mod
 				CurrentModpackIncludeMods = true;
 
 			}
-			Debug.Log("Pass5");
 
 
 			CurrentModpackName = modpacktoload.name;
@@ -1426,7 +1163,7 @@ public class RaftModpackCreator : Mod
 			RaftModpackCreatorPages.ModpackCreatePage.UpdateModpackSelector(GetExistingModpacks(), false);
 
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			Debug.Log("Failed to load Modpack with Exception: " + e);
 		}
@@ -1712,20 +1449,6 @@ public class RaftModpackCreator : Mod
 
 		CurrentModpackContent.Add(slug);
 
-		//Check if it's in
-		/*GameObject ModlistContainer = FindObjectOfType<RaftModpackCreatorPages.ModpackCreatePage>().gameObject.transform.Find("ModpackCreator_ModpackContent").gameObject.transform.Find("ModpackContent_Viewport").gameObject.transform.Find("ModpackContent_Container").gameObject;
-
-		foreach (Transform child in ModlistContainer.transform)
-		{
-			string textelem = child.transform.Find("ModpackCreator_Modeditor_ModitemElem").gameObject.transform.Find("Text").gameObject.GetComponent<Text>().text;
-			if (textelem == Modname)
-			{
-				CreateMessageBox("Don't spam :)", "Can't have a mod twice in a modpack");
-				return;
-
-			}
-
-		}*/
 		try
 		{
 
@@ -1740,7 +1463,7 @@ public class RaftModpackCreator : Mod
 			ModeditorEntryElem.transform.Find("ModpackCreator_Modeditor_ModitemElem").gameObject.GetComponent<Button>().onClick.AddListener(() => RemoveFromModpack(Modname, slug));
 
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			Debug.LogException(e);
 		}
